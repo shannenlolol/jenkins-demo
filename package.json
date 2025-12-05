@@ -1,0 +1,14 @@
+{
+  "name": "jenkins-demo",
+  "version": "1.0.0",
+  "description": "Minimal Node app for Jenkins CI demo",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Running tests (dummy)\" && exit 0",
+    "build": "echo \"Building app (dummy build)\" && exit 0",
+    "start": "node src/index.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}
