@@ -1,0 +1,65 @@
+pipeline {
+    agent any   // Jenkins agent must have docker CLI access
+
+    environment {
+        REGISTRY      = 'docker.io'
+        IMAGE_NAME    = 'shannenleest/jenkins-demo'
+        IMAGE_TAG     = "build-${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+
+        stage('Run tests') {
+            steps {
+                sh 'npm test'
+            }
+        }
+
+        stage('Build Docker image') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+            }
+        }
+
+        stage('Login to registry') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'shannenleest',
+                    passwordVariable: 'U3BbS33B3zA9'
+                )]) {
+                    sh """
+                      echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin ${REGISTRY}
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker image') {
+            steps {
+                sh """
+                  docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                  docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                  docker push ${IMAGE_NAME}:latest
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pushed image: ${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+    }
+}
