@@ -29,6 +29,17 @@ pipeline {
                 sh 'npm test'
             }
         }
+        
+        stage('Docker sanity check') {
+            steps {
+                sh '''
+                echo "DOCKER_HOST=$DOCKER_HOST"
+                echo "DOCKER_CERT_PATH=$DOCKER_CERT_PATH"
+                ls -l "$DOCKER_CERT_PATH" || true
+                docker version
+                '''
+            }
+        }
 
         stage('Build Docker image') {
             steps {
