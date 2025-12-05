@@ -6,9 +6,9 @@ pipeline {
     }
 
     environment {
-        REGISTRY      = 'docker.io'
-        IMAGE_NAME    = 'shannenleest/jenkins-demo'
-        IMAGE_TAG     = "build-${env.BUILD_NUMBER}"
+        REGISTRY   = 'docker.io'
+        IMAGE_NAME = 'shannenleest/jenkins-demo'
+        IMAGE_TAG  = "build-${env.BUILD_NUMBER}"
     }
 
     stages {
@@ -40,8 +40,8 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'shannenleest',
-                    passwordVariable: 'U3BbS33B3zA9'
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh """
                       echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin ${REGISTRY}
