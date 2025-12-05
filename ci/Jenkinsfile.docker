@@ -29,21 +29,33 @@ pipeline {
                 sh 'npm test'
             }
         }
-        
+
         stage('Docker sanity check') {
             steps {
-                sh '''
-                echo "DOCKER_HOST=$DOCKER_HOST"
-                echo "DOCKER_CERT_PATH=$DOCKER_CERT_PATH"
-                ls -l "$DOCKER_CERT_PATH" || true
-                docker version
-                '''
+                withEnv([
+                    "DOCKER_HOST=tcp://docker:2376",
+                    "DOCKER_CERT_PATH=/certs/client",
+                    "DOCKER_TLS_VERIFY=1"
+                ]) {
+                    sh '''
+                      echo "DOCKER_HOST=$DOCKER_HOST"
+                      echo "DOCKER_CERT_PATH=$DOCKER_CERT_PATH"
+                      ls -l "$DOCKER_CERT_PATH"
+                      docker version
+                    '''
+                }
             }
         }
 
         stage('Build Docker image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                withEnv([
+                    "DOCKER_HOST=tcp://docker:2376",
+                    "DOCKER_CERT_PATH=/certs/client",
+                    "DOCKER_TLS_VERIFY=1"
+                ]) {
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
             }
         }
 
