@@ -49,15 +49,15 @@ pipeline {
 
         stage('Build Docker image') {
             steps {
-                withEnv([
-                    "DOCKER_HOST=tcp://docker:2376",
-                    "DOCKER_CERT_PATH=/certs/client",
-                    "DOCKER_TLS_VERIFY=1"
+               withEnv([
+                    "DOCKER_HOST=tcp://docker:2375"
                 ]) {
+                    sh "docker version"
                     sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
         }
+        
 
         stage('Login to registry') {
             steps {
