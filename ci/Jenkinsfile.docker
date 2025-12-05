@@ -1,5 +1,9 @@
 pipeline {
-    agent any   // Jenkins agent must have docker CLI access
+    agent any
+
+    tools {
+        nodejs 'default'
+    }
 
     environment {
         REGISTRY      = 'docker.io'
@@ -16,7 +20,7 @@ pipeline {
 
         stage('Install dependencies') {
             steps {
-                sh 'npm ci'
+                sh 'npm install'
             }
         }
 
@@ -54,12 +58,6 @@ pipeline {
                   docker push ${IMAGE_NAME}:latest
                 """
             }
-        }
-    }
-
-    post {
-        success {
-            echo "Pushed image: ${IMAGE_NAME}:${IMAGE_TAG}"
         }
     }
 }
