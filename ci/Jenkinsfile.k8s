@@ -6,8 +6,12 @@ pipeline {
         IMAGE_NAME    = 'shannenleest/jenkins-demo'
         IMAGE_TAG     = "build-${env.BUILD_NUMBER}"
 
-        KUBECONFIG    = '/var/lib/jenkins/.kube/config'
-        K8S_NAMESPACE = 'default'
+        KUBECONFIG       = '/var/lib/jenkins/.kube/config'
+        K8S_NAMESPACE    = 'default'
+        DEPLOYMENT_NAME  = 'jenkins-demo'
+
+        DEPLOYMENT_YAML  = 'k8s/deployment.yaml'
+        SERVICE_YAML     = 'k8s/service.yaml'
     }
 
     stages {
@@ -17,17 +21,35 @@ pipeline {
             }
         }
 
+        stage('Sanity checks') {
+            steps {
+                sh '''
+                    set -e
+                    echo "Checking Docker access..."
+                    docker version
+
+                    echo "Checking kubectl access..."
+                    kubectl version --client=true
+
+                    echo "Checking kubeconfig path..."
+                    ls -l "${KUBECONFIG}"
+                '''
+            }
+        }
+
         stage('Build & Push Image') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'shannenleest',
-                    passwordVariable: 'U3BbS33B3zA9'
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh """
-                      docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                      echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin ${REGISTRY}
-                      docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        set -e
+                        echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin ${REGISTRY}
+
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
                     """
                 }
             }
@@ -36,7 +58,10 @@ pipeline {
         stage('Update Kubernetes manifests') {
             steps {
                 sh """
-                  sed -i 's|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/deployment.yaml
+                    set -e
+                    test -f ${DEPLOYMENT_YAML}
+
+                    sed -i 's|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g' ${DEPLOYMENT_YAML}
                 """
             }
         }
@@ -44,8 +69,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh """
-                  kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} apply -f k8s/deployment.yaml
-                  kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} apply -f k8s/service.yaml
+                    set -e
+                    kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} apply -f ${DEPLOYMENT_YAML}
+                    kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} apply -f ${SERVICE_YAML}
                 """
             }
         }
@@ -53,7 +79,10 @@ pipeline {
 
     post {
         success {
-            sh "kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} rollout status deploy/jenkins-demo"
+            sh """
+                set -e
+                kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} rollout status deployment/${DEPLOYMENT_NAME}
+            """
         }
     }
 }
