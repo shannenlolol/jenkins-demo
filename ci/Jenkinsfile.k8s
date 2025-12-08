@@ -6,7 +6,7 @@ pipeline {
         IMAGE_NAME    = 'shannenleest/jenkins-demo'
         IMAGE_TAG     = "build-${env.BUILD_NUMBER}"
 
-        KUBECONFIG       = '/var/lib/jenkins/.kube/config'
+        KUBECONFIG       = '/var/jenkins_home/.kube/config'
         K8S_NAMESPACE    = 'default'
         DEPLOYMENT_NAME  = 'jenkins-demo'
 
@@ -32,10 +32,11 @@ pipeline {
                     kubectl version --client=true
 
                     echo "Checking kubeconfig path..."
-                    ls -l "${KUBECONFIG}"
+                    ls -l ${KUBECONFIG}
                 '''
             }
         }
+
 
         stage('Build & Push Image') {
             steps {
