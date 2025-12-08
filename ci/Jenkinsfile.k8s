@@ -81,9 +81,33 @@ pipeline {
     post {
         success {
             sh """
-                set -e
-                kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} rollout status deployment/${DEPLOYMENT_NAME}
+            set -e
+            kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} rollout status deployment/jenkins-demo
+
+            """
+        }
+        failure {
+            sh """
+            set +e
+            echo "---- Deployments ----"
+            kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} get deploy
+
+            echo "---- Pods ----"
+            kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} get pods -o wide
+
+            echo "---- Service ----"
+            kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} get svc
+
+            echo "---- Describe deployment ----"
+            kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} describe deployment jenkins-demo
+
+            echo "---- Describe pods ----"
+            kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} describe pod -l app=jenkins-demo
+
+            echo "---- Logs ----"
+            kubectl --kubeconfig=${KUBECONFIG} -n ${K8S_NAMESPACE} logs -l app=jenkins-demo --all-containers=true --tail=200
             """
         }
     }
+
 }
